@@ -17,7 +17,7 @@ typedef void (*_SPI_ptr)();
 #define SPISlave_T4_FUNC template<SPIClass* port, SPI_BITS bits>
 #define SPISlave_T4_OPT SPISlave_T4<port, bits>
 
-extern SPIClass SPI;
+extern SPIClass SPI1;
 
 class SPISlave_T4_Base {
   public:
@@ -26,8 +26,8 @@ class SPISlave_T4_Base {
 
 //static SPISlave_T4_Base* _LPSPI1 = nullptr;
 //static SPISlave_T4_Base* _LPSPI2 = nullptr;
-//static SPISlave_T4_Base* _LPSPI3 = nullptr;
-static SPISlave_T4_Base* _LPSPI4 = nullptr;
+static SPISlave_T4_Base* _LPSPI3 = nullptr;
+// static SPISlave_T4_Base* _LPSPI4 = nullptr;
 
 SPISlave_T4_CLASS class SPISlave_T4 : public SPISlave_T4_Base {
   public:
