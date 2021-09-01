@@ -25,7 +25,7 @@ SPISlave_T4_FUNC SPISlave_T4_OPT::SPISlave_T4() {
   if ( port == &SPI1 ) {
     _LPSPI3 = this;
     _portnum = 2;
-    CCM_CCGR1 |= (3UL << 4);    // Clock gating register
+    CCM_CCGR1 |= (3UL << 4);    // Clock gating register. CG3=6, CG2=4, CG1=2, CG0=0. Oddly, changing from CG3 to CG2 causes hang on init.
     nvic_irq = 32 + _portnum;
     _VectorsRam[16 + nvic_irq] = lpspi3_slave_isr;
 
@@ -53,7 +53,7 @@ SPISlave_T4_FUNC SPISlave_T4_OPT::SPISlave_T4() {
 SPISlave_T4_FUNC void SPISlave_T4_OPT::swapPins(bool enable) {
   SLAVE_PORT_ADDR;
   SLAVE_CR &= ~LPSPI_CR_MEN; /* Disable Module */
-  SLAVE_CFGR1 = (SLAVE_CFGR1 & 0xFCFFFFFF) | (enable) ? (3UL << 24) : (0UL << 24);
+  SLAVE_CFGR1 = (SLAVE_CFGR1 & 0xFCFFFFFF) | (enable) ? (3UL << 24) : (0UL << 24);  // PINCFG
   SLAVE_CR |= LPSPI_CR_MEN; /* Enable Module */
   if ( sniffer_enabled ) sniffer();
 }
@@ -65,27 +65,35 @@ SPISlave_T4_FUNC void SPISlave_T4_OPT::sniffer(bool enable) {
   if ( port == &SPI1 ) {
     if ( sniffer_enabled ) {
       if ( SLAVE_CFGR1 & (3UL << 24) ) { /* if pins are swapped */
-        IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_03 = 0x3; /* LPSPI4 SCK (CLK) */
-        IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_01 = 0x0; /* LPSPI4 SDI (MISO) */
-        IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_02 = 0x3; /* LPSPI4 SDO (MOSI) */
-        IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_00 = 0x3; /* LPSPI4 PCS0 (CS) */
+        // IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_03 = 0x3; // LPSPI4 SCK (CLK) 13 ALT3
+        // IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_01 = 0x0; // LPSPI4 SDI (MISO) 12 ALT0 LCD_ENABLE?
+        // IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_02 = 0x3; // LPSPI4 SDO (MOSI) 11 ALT3
+        // IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_00 = 0x3; // LPSPI4 PCS0 (CS) 10 ALT3
+          IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B1_15 = 0x2; // LPSPI3 SCK1 (CLK) 27 ALT2
+          IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B0_02 = 0x7; // LPSPI3 SDI (MISO1) 1 ALT7
+          IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B1_14 = 0x2; // LPSPI3 SDO (MOSI1) 26 ALT2
+          IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B0_03 = 0x7; // LPSPI3 PCS1 (CS1) 0 ALT7
       }
       else {
-        IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_03 = 0x3; /* LPSPI4 SCK (CLK) */
-        IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_01 = 0x3; /* LPSPI4 SDI (MISO) */
-        IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_02 = 0x0; /* LPSPI4 SDO (MOSI) */
-        IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_00 = 0x3; /* LPSPI4 PCS0 (CS) */
+        // IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_03 = 0x3; // LPSPI4 SCK (CLK) 13 ALT3
+        // IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_01 = 0x3; // LPSPI4 SDI (MISO) 12 ALT3
+        // IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_02 = 0x0; // LPSPI4 SDO (MOSI) 11 ALT0 LCD_HSYNC?
+        // IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_00 = 0x3; // LPSPI4 PCS0 (CS) 10 ALT3
+          IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B1_15 = 0x2; // LPSPI3 SCK1 (CLK) 27 ALT2  
+          IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B0_02 = 0x7; // LPSPI3 SDI (MISO1) 1 ALT7 
+          IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B1_14 = 0x2; // LPSPI3 SDO (MOSI1) 26 ALT2 
+          IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B0_03 = 0x7; // LPSPI3 PCS1 (CS) 0 ALT7 
       }
     }
     else {
-      // IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_03 = 0x3; /* LPSPI4 SCK (CLK) */
-      // IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_01 = 0x3; /* LPSPI4 SDI (MISO) */
-      // IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_02 = 0x3; /* LPSPI4 SDO (MOSI) */
-      // IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_00 = 0x3; /* LPSPI4 PCS0 (CS) */
-      IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B1_15 = 0x2; /* LPSPI3 SCK1 (CLK) 27 ALT2*/
-      IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B0_02 = 0x7; /* LPSPI3 SDI (MISO1) 1 ALT7*/
-      IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B1_14 = 0x2; /* LPSPI3 SDO (MOSI) 26 ALT2*/
-      IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B0_03 = 0x7; /* LPSPI3 PCS1 (CS) 0 ALT7*/
+      // IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_03 = 0x3; // LPSPI4 SCK (CLK) ALT3
+      // IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_01 = 0x3; // LPSPI4 SDI (MISO) ALT3
+      // IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_02 = 0x3; // LPSPI4 SDO (MOSI) ALT3
+      // IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_00 = 0x3; // LPSPI4 PCS0 (CS) ALT3
+      IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B1_15 = 0x2; // LPSPI3 SCK1 (CLK) 27 ALT2 
+      IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B0_02 = 0x7; // LPSPI3 SDI (MISO1) 1 ALT7 
+      IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B1_14 = 0x2; // LPSPI3 SDO (MOSI1) 26 ALT2 
+      IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B0_03 = 0x7; // LPSPI3 PCS1 (CS) 0 ALT7 
     }
   }
 }
@@ -151,9 +159,9 @@ SPISlave_T4_FUNC void SPISlave_T4_OPT::begin() {
   SLAVE_CR = LPSPI_CR_RST; /* Reset Module */
   SLAVE_CR = 0; /* Disable Module */
   SLAVE_FCR = 0;//x10001; /* 1x watermark for RX and TX */
-  SLAVE_IER = 0x1; /* RX Interrupt */
-  SLAVE_CFGR0 = 0;
-  SLAVE_CFGR1 = 0;
+  SLAVE_IER = 0x1; // RX Interrupt - datasheet says 0x1 is TX interrupt. RX is 0x2.
+  SLAVE_CFGR0 = 4;  // Verify HRSEL. Should be 1?
+  SLAVE_CFGR1 = 0;  // slave, sample on SCK edge, !autoPCS (must raise CS between frames), FIFO will stall, CS active low, match disabled, 
   SLAVE_CR |= LPSPI_CR_MEN | LPSPI_CR_DBGEN; /* Enable Module, Debug Mode */
   SLAVE_SR = 0x3F00; /* Clear status register */
   SLAVE_TCR_REFRESH;
