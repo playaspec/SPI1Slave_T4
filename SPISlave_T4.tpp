@@ -2,16 +2,17 @@
 #include "Arduino.h"
 #include "SPI.h"
 
-#define SLAVE_CR spiAddr[4]
-#define SLAVE_FCR spiAddr[22]
-#define SLAVE_IER spiAddr[6]
-#define SLAVE_CFGR0 spiAddr[8]
-#define SLAVE_CFGR1 spiAddr[9]
-#define SLAVE_TDR spiAddr[25]
-#define SLAVE_RDR spiAddr[29]
-#define SLAVE_SR spiAddr[5]
+#define SLAVE_CR spiAddr[4]     // 48.4.1.4   Control register. page 2813
+#define SLAVE_FCR spiAddr[22]   // 48.4.1.13  FIFO Control Register. page 2825
+#define SLAVE_IER spiAddr[6]    // 48.4.1.6   Interrupt Enable Register, 2816
+#define SLAVE_CFGR0 spiAddr[8]  // 48.4.1.8   Configuration Register 0, page 2818
+#define SLAVE_CFGR1 spiAddr[9]  // 48.4.1.9   Configuration Register 1, page 2819
+#define SLAVE_TDR spiAddr[25]   // 48.4.1.16  Transmit Data Register (TDR), page 2830
+#define SLAVE_RDR spiAddr[29]   // 48.4.1.18  Receive Data Register, page 2831
+#define SLAVE_SR spiAddr[5]     // 48.4.1.5   Status Register, page 2814
 #define SLAVE_TCR_REFRESH spiAddr[24] = (0UL << 27) | LPSPI_TCR_FRAMESZ(bits - 1)
 #define SLAVE_PORT_ADDR volatile uint32_t *spiAddr = &(*(volatile uint32_t*)(0x40394000 + (0x4000 * _portnum)))
+// 11.7.311 LPSPI1_PCS0_SELECT_INPUT DAISY Register (IOMUXC_LPSPI1_PCS0_SELECT_INPUT) 401F_84ECh
 #define SLAVE_PINS_ADDR volatile uint32_t *spiAddr = &(*(volatile uint32_t*)(0x401F84EC + (_portnum * 0x10)))
 
  
@@ -24,26 +25,26 @@ SPISlave_T4_FUNC SPISlave_T4_OPT::SPISlave_T4() {
   if ( port == &SPI1 ) {
     _LPSPI3 = this;
     _portnum = 2;
-    CCM_CCGR1 |= (3UL << 6);
+    CCM_CCGR1 |= (3UL << 4);    // Clock gating register
     nvic_irq = 32 + _portnum;
     _VectorsRam[16 + nvic_irq] = lpspi3_slave_isr;
 
     /* Alternate pins not broken out on Teensy 4.0/4.1 for LPSPI4 */
     SLAVE_PINS_ADDR;
-    spiAddr[0] = 0; /* PCS0_SELECT_INPUT */
-    spiAddr[1] = 0; /* SCK_SELECT_INPUT */
-    spiAddr[2] = 0; /* SDI_SELECT_INPUT */
-    spiAddr[3] = 0; /* SDO_SELECT_INPUT */
+    spiAddr[0] = 0; // PCS0_SELECT_INPUT (401F_850Ch) GPIO_AD_B0_03_ALT7 
+    spiAddr[1] = 1; // SCK_SELECT_INPUT (401F_8510h) GPIO_AD_B1_15_ALT2
+    spiAddr[2] = 0; // SDI_SELECT_INPUT (401F_8514h) GPIO_AD_B0_02_ALT7
+    spiAddr[3] = 1; // SDO_SELECT_INPUT (401F_8518h) GPIO_AD_B1_14_ALT2
     // These are the primary SPI mux control registers.
     // IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_03 = 0x3; /* LPSPI4 SCK (CLK) 13 ALT3 */
     // IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_01 = 0x3; /* LPSPI4 SDI (MISO) 12 */
     // IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_02 = 0x3; /* LPSPI4 SDO (MOSI) 11 ALT3*/
     // IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_00 = 0x3; /* LPSPI4 PCS0 (CS) 10 ALT3*/
     // SPI1
-    IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B1_15 = 0x3; /* LPSPI3 SCK1 (CLK) 27 ALT2*/
-    IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B0_02 = 0x3; /* LPSPI3 SDI (MISO1) 1 ALT7*/
-    IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B1_14 = 0x3; /* LPSPI3 SDO (MOSI) 26 ALT2*/
-    IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B0_03 = 0x3; /* LPSPI3 PCS1 (CS) 0 ALT7*/
+    IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B1_15 = 0x2; /* LPSPI3 SCK1 (CLK) 27 ALT2*/
+    IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B0_02 = 0x7; /* LPSPI3 SDI (MISO1) 1 ALT7*/
+    IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B1_14 = 0x2; /* LPSPI3 SDO (MOSI) 26 ALT2*/
+    IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B0_03 = 0x7; /* LPSPI3 PCS1 (CS) 0 ALT7*/
 
   } 
 }
@@ -81,10 +82,10 @@ SPISlave_T4_FUNC void SPISlave_T4_OPT::sniffer(bool enable) {
       // IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_01 = 0x3; /* LPSPI4 SDI (MISO) */
       // IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_02 = 0x3; /* LPSPI4 SDO (MOSI) */
       // IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_00 = 0x3; /* LPSPI4 PCS0 (CS) */
-      IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B1_15 = 0x3; /* LPSPI3 SCK1 (CLK) 27 ALT2*/
-      IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B0_02 = 0x3; /* LPSPI3 SDI (MISO1) 1 ALT7*/
-      IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B1_14 = 0x3; /* LPSPI3 SDO (MOSI) 26 ALT2*/
-      IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B0_03 = 0x3; /* LPSPI3 PCS1 (CS) 0 ALT7*/
+      IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B1_15 = 0x2; /* LPSPI3 SCK1 (CLK) 27 ALT2*/
+      IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B0_02 = 0x7; /* LPSPI3 SDI (MISO1) 1 ALT7*/
+      IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B1_14 = 0x2; /* LPSPI3 SDO (MOSI) 26 ALT2*/
+      IOMUXC_SW_MUX_CTL_PAD_GPIO_AD_B0_03 = 0x7; /* LPSPI3 PCS1 (CS) 0 ALT7*/
     }
   }
 }
