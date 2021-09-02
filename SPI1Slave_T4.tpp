@@ -172,7 +172,7 @@ SPI1Slave_T4_FUNC void SPI1Slave_T4_OPT::begin() {
   SLAVE_CR = 0;           // Disable Module
   SLAVE_FCR = 0;          // x10001; // 1x watermark for RX and TX
   SLAVE_IER = 0x1;        // RX Interrupt - datasheet says 0x1 is TX interrupt. RX is 0x2.
-  SLAVE_CFGR0 = 4;        // Verify HRSEL. Should be 1?
+  SLAVE_CFGR0 = 0;        // Verify HRSEL. Should be 1?
   SLAVE_CFGR1 = 0;        // slave, sample on SCK rising edge, !autoPCS (must raise CS between frames), FIFO will stall, CS active low, match disabled, 
   SLAVE_CR |= LPSPI_CR_MEN | LPSPI_CR_DBGEN; /* Enable Module, Debug Mode */
   SLAVE_SR = 0x3F00;      // Clear status register
