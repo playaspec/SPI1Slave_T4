@@ -1,4 +1,4 @@
-#include <SPISlave_T4.h>
+#include <SPI1Slave_T4.h>
 #include "Arduino.h"
 #include "SPI.h"
 
@@ -25,7 +25,7 @@ void lpspi3_slave_isr() {
 }
 
 
-SPISlave_T4_FUNC SPISlave_T4_OPT::SPISlave_T4() {
+SPI1Slave_T4_FUNC SPI1Slave_T4_OPT::SPI1Slave_T4() {
   if ( port == &SPI1 ) {
     _LPSPI3 = this;
     _portnum = 2;               // According to: https://forum.pjrc.com/threads/61234-Teensy-4-1-and-SPI1 
@@ -62,7 +62,7 @@ SPISlave_T4_FUNC SPISlave_T4_OPT::SPISlave_T4() {
 
 
 // "disables the slave output pin so it listens to traffic only." See: https://forum.pjrc.com/threads/66389-SPISlave_T4
-SPISlave_T4_FUNC void SPISlave_T4_OPT::swapPins(bool enable) {
+SPI1Slave_T4_FUNC void SPI1Slave_T4_OPT::swapPins(bool enable) {
   SLAVE_PORT_ADDR;
   SLAVE_CR &= ~LPSPI_CR_MEN; // Disable Module 
   SLAVE_CFGR1 = (SLAVE_CFGR1 & 0xFCFFFFFF) | (enable) ? (3UL << 24) : (0UL << 24);  // PINCFG
@@ -71,7 +71,7 @@ SPISlave_T4_FUNC void SPISlave_T4_OPT::swapPins(bool enable) {
 }
 
 
-SPISlave_T4_FUNC void SPISlave_T4_OPT::sniffer(bool enable) {
+SPI1Slave_T4_FUNC void SPI1Slave_T4_OPT::sniffer(bool enable) {
   SLAVE_PORT_ADDR;
   sniffer_enabled = enable;
   if ( port == &SPI1 ) {
@@ -111,25 +111,25 @@ SPISlave_T4_FUNC void SPISlave_T4_OPT::sniffer(bool enable) {
 }
 
 
-SPISlave_T4_FUNC bool SPISlave_T4_OPT::active() {
+SPI1Slave_T4_FUNC bool SPI1Slave_T4_OPT::active() {
   SLAVE_PORT_ADDR;
   return ( !(SLAVE_SR & (1UL << 9)) ) ? 1 : 0;
 }
 
 
-SPISlave_T4_FUNC bool SPISlave_T4_OPT::available() {
+SPI1Slave_T4_FUNC bool SPI1Slave_T4_OPT::available() {
   SLAVE_PORT_ADDR;
   return ( (SLAVE_SR & (1UL << 8)) ) ? 1 : 0;
 }
 
 
-SPISlave_T4_FUNC void SPISlave_T4_OPT::pushr(uint32_t data) {
+SPI1Slave_T4_FUNC void SPI1Slave_T4_OPT::pushr(uint32_t data) {
   SLAVE_PORT_ADDR;
   SLAVE_TDR = data;
 }
 
 
-SPISlave_T4_FUNC uint32_t SPISlave_T4_OPT::popr() {
+SPI1Slave_T4_FUNC uint32_t SPI1Slave_T4_OPT::popr() {
   SLAVE_PORT_ADDR;
   uint32_t data = SLAVE_RDR;
   SLAVE_SR = (1UL << 8); /* Clear WCF */
@@ -137,7 +137,7 @@ SPISlave_T4_FUNC uint32_t SPISlave_T4_OPT::popr() {
 }
 
 
-SPISlave_T4_FUNC void SPISlave_T4_OPT::SLAVE_ISR() {
+SPI1Slave_T4_FUNC void SPI1Slave_T4_OPT::SLAVE_ISR() {
 
   SLAVE_PORT_ADDR;
 
@@ -166,7 +166,7 @@ SPISlave_T4_FUNC void SPISlave_T4_OPT::SLAVE_ISR() {
 }
 
 
-SPISlave_T4_FUNC void SPISlave_T4_OPT::begin() {
+SPI1Slave_T4_FUNC void SPI1Slave_T4_OPT::begin() {
   SLAVE_PORT_ADDR;
   SLAVE_CR = LPSPI_CR_RST;// Reset Module
   SLAVE_CR = 0;           // Disable Module
